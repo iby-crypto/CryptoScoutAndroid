@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>CryptoScout</title>
+<style>
+:root{color-scheme:dark;--bg:#08111f;--card:#101d30;--muted:#91a4bf;--line:#24344b;--green:#35d49a;--red:#ff6377;--yellow:#ffd166}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#edf4ff;font:14px system-ui,-apple-system,sans-serif}
+header{padding:18px 16px 12px;background:#0c1728;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:2}
+.brand{font-size:21px;font-weight:800;letter-spacing:.3px}.brand span{color:var(--green)}.sub{color:var(--muted);font-size:12px;margin-top:3px}
+main{padding:14px;max-width:800px;margin:auto}.row{display:flex;gap:8px;align-items:center}.row>*{flex:1;min-width:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:14px;margin-bottom:12px}
+label{font-size:11px;color:var(--muted);display:block;margin-bottom:6px}select,button{width:100%;background:#0b1627;color:#f3f7ff;border:1px solid #344762;border-radius:10px;padding:11px;font:inherit}
+button{font-weight:700;cursor:pointer}.primary{background:#123a39;border-color:#1f8b77}.small{font-size:12px;padding:8px}
+.price{font-size:28px;font-weight:800;letter-spacing:-.8px}.muted{color:var(--muted)}.green{color:var(--green)}.red{color:var(--red)}.yellow{color:var(--yellow)}
+.pill{display:inline-block;border-radius:20px;padding:5px 9px;background:#24344b;font-size:11px;font-weight:700}.signal{font-size:23px;font-weight:900}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.metric{background:#0b1627;padding:10px;border-radius:10px}.metric b{display:block;margin-top:4px;font-size:15px}
+canvas{width:100%;height:220px;display:block;background:#0b1627;border-radius:10px}
+#status{font-size:12px;color:var(--muted);line-height:1.5}.list{max-height:300px;overflow:auto}.coin{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer}.coin:last-child{border:0}.coin strong{display:block}.coin small{color:var(--muted)}
+.notice{font-size:12px;line-height:1.55;color:#c4d1e3}.footer{font-size:11px;text-align:center;color:var(--muted);padding:10px}
+@media(min-width:620px){.layout{display:grid;grid-template-columns:1.2fr .8fr;gap:12px}.layout .card{margin-bottom:0}.layout .stack{display:flex;flex-direction:column;gap:12px}.layout .stack .card{margin:0}}
+</style></head><body>
+<header><div class="brand">Crypto<span>Scout</span></div><div class="sub">Binance market scanner · signal assistant · no trading permissions</div></header>
+<main>
+<div class="card">
+ <div class="row"><div><label>MARKET</label><select id="market"><option value="spot">Spot</option><option value="futures">USDⓈ-M Futures</option></select></div>
+ <div><label>TIMEFRAME</label><select id="tf"><option>1m</option><option selected>5m</option><option>15m</option><option>1h</option></select></div></div>
+ <div class="row" style="margin-top:10px"><div style="flex:2"><label>USDT PAIR</label><select id="symbol"><option>BTCUSDT</option></select></div><div style="flex:1"><label> </label><button id="refresh" class="primary">Refresh</button></div></div>
+ <div id="status" style="margin-top:10px">Connecting to public Binance market data…</div>
+</div>
+<div class="layout">
+ <div class="stack">
+  <div class="card"><div class="muted" id="pairLabel">BTCUSDT · Spot</div><div class="price" id="price">—</div><div id="change" class="muted">Waiting for market data</div><div style="margin-top:12px"><canvas id="chart" width="720" height="360"></canvas></div></div>
+  <div class="card"><div style="font-weight:800;margin-bottom:10px">Technical indicators</div><div class="grid">
+   <div class="metric"><span class="muted">RSI (14)</span><b id="rsi">—</b></div>
+   <div class="metric"><span class="muted">EMA 9</span><b id="ema9">—</b></div>
+   <div class="metric"><span class="muted">EMA 21</span><b id="ema21">—</b></div>
+   <div class="metric"><span class="muted">MACD</span><b id="macd">—</b></div>
+   <div class="metric"><span class="muted">24h volume</span><b id="volume">—</b></div>
+   <div class="metric"><span class="muted">Candles</span><b id="candles">—</b></div>
+  </div></div>
+ </div>
+ <div class="stack">
+  <div class="card"><div class="muted">RULE-BASED SIGNAL · NOT A GUARANTEE</div><div id="signal" class="signal" style="margin-top:8px">WAIT</div><div id="reason" class="notice" style="margin-top:7px">Loading candles and calculating indicators.</div><div class="grid" style="margin-top:14px"><div class="metric"><span class="muted">Entry ref.</span><b id="entry">—</b></div><div class="metric"><span class="muted">Stop ref.</span><b id="stop">—</b></div><div class="metric"><span class="muted">Target ref.</span><b id="target">—</b></div></div><p class="notice">Reference levels are illustrative (0.8% stop / 1.2% target), not order instructions. Fees, spread, slippage and liquidation risk are not included.</p></div>
+  <div class="card"><div style="font-weight:800;margin-bottom:5px">Top USDT pairs</div><div class="muted" style="font-size:12px;margin-bottom:8px">Select a pair to inspect. List is filtered to active symbols.</div><div class="list" id="coins"><div class="muted">Loading pair list…</div></div></div>
+ </div>
+</div>
+<div class="card notice"><b>Safety mode:</b> this prototype is read-only. It never places orders and never asks for an API key, seed phrase, or account password. Signal logic is a basic educational heuristic; validate with historical backtests and paper trading before making financial decisions.</div>
+<div class="footer">CryptoScout 0.1 · Public market data via Binance · Not financial advice</div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+let socket=null, candles=[], selected='BTCUSDT', market='spot', tf='5m', tickerTimer=null, allPairs=[], tickers={};
+const fmt=n=>Number.isFinite(n)?n.toLocaleString('en-US',{maximumFractionDigits:n<1?8:2}):'—';
+const priceFmt=n=>Number.isFinite(n)?n.toLocaleString('en-US',{maximumFractionDigits:n<1?8:4}):'—';
+const base=()=>market==='spot'?'https://api.binance.com':'https://fapi.binance.com';
+const wsbase=()=>market==='spot'?'wss://stream.binance.com:9443/ws':'wss://fstream.binance.com/ws';
+function setStatus(s){$('status').textContent=s}
+async function json(url){const r=await fetch(url);if(!r.ok)throw new Error('Binance API HTTP '+r.status);return r.json()}
+async function loadPairs(){
+ try{
+  const info=await json(base()+(market==='spot'?'/api/v3/exchangeInfo':'/fapi/v1/exchangeInfo'));
+  allPairs=info.symbols.filter(x=>x.quoteAsset==='USDT'&&x.status==='TRADING'&&(market==='spot'?x.isSpotTradingAllowed!==false:x.contractType==='PERPETUAL'));
+  const t=await json(base()+(market==='spot'?'/api/v3/ticker/24hr':'/fapi/v1/ticker/24hr'));
+  tickers={};t.forEach(x=>tickers[x.symbol]=x);
+  allPairs.sort((a,b)=>Number(tickers[b.symbol]?.quoteVolume||0)-Number(tickers[a.symbol]?.quoteVolume||0));
+  const select=$('symbol');select.innerHTML='';
+  allPairs.forEach(p=>{const o=document.createElement('option');o.value=p.symbol;o.textContent=p.symbol;select.appendChild(o)});
+  if(!allPairs.some(p=>p.symbol===selected))selected=allPairs[0]?.symbol||'BTCUSDT';
+  select.value=selected;
+  renderCoins();setStatus(`Loaded ${allPairs.length} active USDT pairs. Monitoring selected pair; public data only.`);
+ }catch(e){setStatus('Could not load Binance pair list: '+e.message+'. Check internet or try Refresh.')}
+}
+function renderCoins(){
+ const el=$('coins');el.innerHTML='';
+ allPairs.slice(0,40).forEach(p=>{const t=tickers[p.symbol]||{};const div=document.createElement('div');div.className='coin';
+ const pct=Number(t.priceChangePercent||0);div.innerHTML=`<div><strong>${p.symbol}</strong><small>Vol ${compact(Number(t.quoteVolume||0))} USDT</small></div><div style="text-align:right"><strong>${priceFmt(Number(t.lastPrice))}</strong><small class="${pct>=0?'green':'red'}">${pct>=0?'+':''}${pct.toFixed(2)}%</small></div>`;
+ div.onclick=()=>{selected=p.symbol;$('symbol').value=selected;startPair()};el.appendChild(div)});
+}
+function compact(n){if(!Number.isFinite(n))return'—';return n>=1e9?(n/1e9).toFixed(1)+'B':n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(1)+'K':n.toFixed(0)}
+function disconnect(){if(socket){socket.onclose=null;socket.close();socket=null}if(tickerTimer){clearInterval(tickerTimer);tickerTimer=null}}
+async function startPair(){
+ disconnect();selected=$('symbol').value||selected;market=$('market').value;tf=$('tf').value;candles=[];
+ $('pairLabel').textContent=selected+' · '+(market==='spot'?'Spot':'USDⓈ-M Futures');setStatus('Fetching candles…');
+ try{
+  const path=market==='spot'?'/api/v3/klines':'/fapi/v1/klines';
+  const raw=await json(base()+path+'?symbol='+selected+'&interval='+tf+'&limit=150');
+  candles=raw.map(k=>({t:k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]}));
+  updateUI();connectWS();
+  updateTicker();tickerTimer=setInterval(updateTicker,15000);
+ }catch(e){setStatus('Failed to fetch candles: '+e.message)}
+}
+function connectWS(){
+ try{
+  socket=new WebSocket(wsbase()+'/'+selected.toLowerCase()+'@kline_'+tf);
+  socket.onopen=()=>setStatus('Live WebSocket connected · '+selected+' · '+tf+' · '+(market==='spot'?'Spot':'Futures'));
+  socket.onmessage=e=>{try{const d=JSON.parse(e.data),k=d.k,c={t:k.t,o:+k.o,h:+k.h,l:+k.l,c:+k.c,v:+k.v};const i=candles.findIndex(x=>x.t===c.t);if(i>=0)candles[i]=c;else{candles.push(c);if(candles.length>150)candles.shift()}updateUI()}catch(_){}};
+  socket.onerror=()=>setStatus('WebSocket issue. Trying to reconnect by tapping Refresh.');
+  socket.onclose=()=>{if(socket)setStatus('Live feed disconnected. Tap Refresh to reconnect.')};
+ }catch(e){setStatus('Could not start WebSocket: '+e.message)}
+}
+async function updateTicker(){
+ try{const t=await json(base()+(market==='spot'?'/api/v3/ticker/24hr':'/fapi/v1/ticker/24hr')+'?symbol='+selected);
+ $('volume').textContent=compact(Number(t.quoteVolume));$('change').textContent=(Number(t.priceChangePercent)>=0?'+':'')+Number(t.priceChangePercent).toFixed(2)+'% in 24h';
+ $('change').className=Number(t.priceChangePercent)>=0?'green':'red';
+ }catch(e){}
+}
+function ema(vals,period){if(vals.length<period)return NaN;const k=2/(period+1);let x=vals.slice(0,period).reduce((a,b)=>a+b,0)/period;for(let i=period;i<vals.length;i++)x=vals[i]*k+x*(1-k);return x}
+function rsi(vals,p=14){if(vals.length<=p)return NaN;let g=0,l=0;for(let i=vals.length-p;i<vals.length;i++){const d=vals[i]-vals[i-1];if(d>0)g+=d;else l-=d}if(l===0)return 100;const rs=(g/p)/(l/p);return 100-100/(1+rs)}
+function macd(vals){if(vals.length<35)return NaN;return ema(vals,12)-ema(vals,26)}
+function analyze(){
+ const vals=candles.map(x=>x.c),last=vals.at(-1),e9=ema(vals,9),e21=ema(vals,21),r=rsi(vals),m=macd(vals);
+ let sig='WAIT',why='No clear alignment: wait for a stronger setup.';
+ if(Number.isFinite(e9)&&Number.isFinite(e21)&&Number.isFinite(r)&&Number.isFinite(m)){
+  if(e9>e21&&r>=52&&r<=68&&m>0){sig='BUY BIAS';why='EMA 9 above EMA 21, RSI supports bullish momentum, and MACD is positive. Signal is not a guarantee.'}
+  else if(e9<e21&&r>=32&&r<=48&&m<0){sig='SELL BIAS';why='EMA 9 below EMA 21, RSI supports bearish momentum, and MACD is negative. For Spot, this means caution/possible exit review—not short selling.'}
+  else if(r>70)why='RSI is above 70; momentum may be extended. Avoid chasing; wait for confirmation.';
+  else if(r<30)why='RSI is below 30; selling pressure is strong and a reversal is not guaranteed. Wait for confirmation.';
+ }
+ return {sig,why,last,e9,e21,r,m};
+}
+function updateUI(){
+ if(!candles.length)return;const a=analyze();$('price').textContent=priceFmt(a.last);$('rsi').textContent=fmt(a.r);$('ema9').textContent=priceFmt(a.e9);$('ema21').textContent=priceFmt(a.e21);$('macd').textContent=priceFmt(a.m);$('candles').textContent=candles.length;
+ $('signal').textContent=a.sig;$('signal').className='signal '+(a.sig==='BUY BIAS'?'green':a.sig==='SELL BIAS'?'red':'yellow');$('reason').textContent=a.why;
+ $('entry').textContent=priceFmt(a.last);$('stop').textContent=priceFmt(a.last*(a.sig==='SELL BIAS'?1.008:.992));$('target').textContent=priceFmt(a.last*(a.sig==='SELL BIAS'?.988:1.012));
+ drawChart();$('pairLabel').textContent=selected+' · '+(market==='spot'?'Spot':'USDⓈ-M Futures')+' · '+tf;
+}
+function drawChart(){
+ const c=$('chart'),ctx=c.getContext('2d'),w=c.width,h=c.height;ctx.clearRect(0,0,w,h);ctx.fillStyle='#0b1627';ctx.fillRect(0,0,w,h);
+ const data=candles.slice(-55);if(!data.length)return;let lo=Math.min(...data.map(x=>x.l)),hi=Math.max(...data.map(x=>x.h));if(hi===lo){hi+=1;lo-=1}
+ for(let i=0;i<5;i++){const y=i*h/4;ctx.strokeStyle='#203047';ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
+ const pad=8,step=(w-pad*2)/data.length,cw=Math.max(3,step*.55);
+ data.forEach((d,i)=>{const x=pad+i*step+step/2,yo=h-(d.o-lo)/(hi-lo)*h,yc=h-(d.c-lo)/(hi-lo)*h,yh=h-(d.h-lo)/(hi-lo)*h,yl=h-(d.l-lo)/(hi-lo)*h;const col=d.c>=d.o?'#35d49a':'#ff6377';ctx.strokeStyle=col;ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(x,yh);ctx.lineTo(x,yl);ctx.stroke();ctx.fillRect(x-cw/2,Math.min(yo,yc),cw,Math.max(1,Math.abs(yc-yo)))});
+}
+$('market').onchange=async()=>{market=$('market').value;await loadPairs();startPair()};
+$('tf').onchange=()=>startPair();
+$('symbol').onchange=()=>startPair();
+$('refresh').onclick=async()=>{market=$('market').value;await loadPairs();startPair()};
+loadPairs().then(startPair);
+</script></body></html>
